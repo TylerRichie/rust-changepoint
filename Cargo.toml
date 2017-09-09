@@ -1,0 +1,6 @@
+[package]
+name = "changepoint"
+version = "0.1.0"
+authors = ["Tyler Richie <tbrichie@gmail.com>"]
+
+[dependencies]
