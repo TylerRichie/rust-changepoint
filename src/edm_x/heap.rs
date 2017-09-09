@@ -2,9 +2,9 @@ use std::collections::BinaryHeap;
 use std::cmp::{Ordering, Ord};
 
 #[derive(PartialEq, Eq, Debug)]
-pub struct MinHeapItem<T: PartialEq + Eq + PartialOrd + Ord>(T);
+pub struct MinHeapItem<T: PartialEq + Eq + PartialOrd + Ord>(pub T);
 #[derive(PartialEq, Eq, Debug)]
-pub struct MaxHeapItem<T: PartialEq + Eq + PartialOrd + Ord>(T);
+pub struct MaxHeapItem<T: PartialEq + Eq + PartialOrd + Ord>(pub T);
 
 fn min_heap_cmp<T>(this: &MinHeapItem<T>, other: &MinHeapItem<T>) -> Ordering
     where

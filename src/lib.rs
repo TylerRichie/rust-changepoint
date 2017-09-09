@@ -1,3 +1,5 @@
+extern crate num;
+
 mod edm;
 mod edm_x;
 
