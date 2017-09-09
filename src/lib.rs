@@ -1,3 +1,6 @@
+mod edm;
+mod edm_x;
+
 #[cfg(test)]
 mod tests {
     #[test]
