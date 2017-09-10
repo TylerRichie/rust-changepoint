@@ -5,7 +5,7 @@ use algo::edm_x::heap::{MaxHeap, MaxHeapItem, MinHeap, MinHeapItem};
 enum HeapItem<T: Ord> {
     MinHeap(MinHeapItem<T>),
     MaxHeap(MaxHeapItem<T>),
-    BothHeaps(T),
+    FirstPush(T),
 }
 
 #[derive(Clone, Debug)]
@@ -35,7 +35,7 @@ impl<T: Ord + Num + One + Clone> Heaps<T> {
 
     fn push_to_heap(&mut self, push_item: HeapItem<T>) -> () {
         self.heap_size_info = match (&self.heap_size_info, push_item) {
-            (&HeapSizeInfo::Empty, HeapItem::BothHeaps(item)) => {
+            (&HeapSizeInfo::Empty, HeapItem::FirstPush(item)) => {
                 self.min_heap.push(MinHeapItem(item.clone()));
                 self.max_heap.push(MaxHeapItem(item));
                 HeapSizeInfo::EqualSizes
@@ -60,7 +60,7 @@ impl<T: Ord + Num + One + Clone> Heaps<T> {
                 self.min_heap.push(item);
                 if let Some(MinHeapItem(value)) = self.min_heap.pop() {
                     self.max_heap.push(MaxHeapItem(value));
-                    HeapSizeInfo::MinHeapBigger
+                    HeapSizeInfo::EqualSizes
                 } else {
                     unimplemented!("Impossible -- a value was just pushed to the min_heap.")
                 }
@@ -69,7 +69,7 @@ impl<T: Ord + Num + One + Clone> Heaps<T> {
                 self.max_heap.push(item);
                 if let Some(MaxHeapItem(value)) = self.max_heap.pop() {
                     self.min_heap.push(MinHeapItem(value));
-                    HeapSizeInfo::MaxHeapBigger
+                    HeapSizeInfo::EqualSizes
                 } else {
                     unimplemented!("Impossible -- a value was just pushed to the max_heap.")
                 }
@@ -84,7 +84,7 @@ impl<T: Ord + Num + One + Clone> Heaps<T> {
 
     fn add_to_heaps(&mut self, value: T) -> () {
         let heap_item_to_push = match &self.heap_size_info {
-            &HeapSizeInfo::Empty => HeapItem::BothHeaps(value),
+            &HeapSizeInfo::Empty => HeapItem::FirstPush(value),
             _ if &value <= &self.min_heap.peek()
                 .expect("Must be Some -- previous pattern match with Empty ensures a value is present in both heaps.").0 =>
                 HeapItem::MaxHeap(MaxHeapItem(value)),
@@ -171,3 +171,24 @@ where
         .expect("filter_map ensures result is Some")
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use algo::non_nan::{to_non_nans, NonNaN};
+
+    #[test]
+    fn heaps_find_the_median() {
+        let initial_number: NonNaN<f32> = NonNaN::new(1.0).unwrap();
+        let mut heaps: Heaps<NonNaN<f32>> = Heaps::new();
+        heaps.add_to_heaps(initial_number.clone());
+        assert_eq!(heaps.get_median(), initial_number.clone());
+        heaps.add_to_heaps(NonNaN::new(2.0).unwrap());
+        heaps.add_to_heaps(NonNaN::new(3.0).unwrap());
+        heaps.add_to_heaps(NonNaN::new(4.0).unwrap());
+        heaps.add_to_heaps(NonNaN::new(5.0).unwrap());
+        heaps.add_to_heaps(NonNaN::new(6.0).unwrap());
+        heaps.add_to_heaps(NonNaN::new(7.0).unwrap());
+        heaps.add_to_heaps(NonNaN::new(8.0).unwrap());
+        assert_eq!(heaps.get_median(), NonNaN::new(4.0).unwrap());
+    }
+}
