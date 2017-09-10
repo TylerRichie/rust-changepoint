@@ -1,5 +1,7 @@
+#[macro_use] extern crate error_chain;
 extern crate num;
 
+pub mod errors;
 mod algo;
 
 #[cfg(test)]

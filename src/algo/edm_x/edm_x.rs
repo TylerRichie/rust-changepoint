@@ -2,6 +2,8 @@ use num::{One, Num};
 use std::collections::BinaryHeap;
 use algo::edm_x::heap::{MaxHeap, MaxHeapItem, MinHeap, MinHeapItem};
 
+use errors::*;
+
 enum HeapItem<T: Ord> {
     MinHeap(MinHeapItem<T>),
     MaxHeap(MaxHeapItem<T>),
@@ -137,10 +139,15 @@ pub struct BestCandidate<T: Ord> {
     pub location: usize,
 }
 
-fn inner_edm_x_loop<T, I>(left_median: T, delta: usize, z_from_i: I, i: usize) -> BestCandidate<T>
+fn inner_edm_x_loop<'a, T, I>(
+    left_median: T,
+    delta: usize,
+    z_from_i: I,
+    i: usize,
+) -> BestCandidate<T>
 where
-    T: Ord + Clone + Num + One + From<f64>,
-    I: Iterator<Item = T>,
+    T: Ord + Clone + Num + One + From<f64> + 'a,
+    I: Iterator<Item = &'a T>,
 {
     let mut right_heaps: Heaps<T> = Heaps::new();
     let mut best_candidate: Option<BestCandidate<T>> = None;
@@ -149,7 +156,7 @@ where
         .enumerate()
         .scan(starting_state, move |next_state, (jmi, next_item)| {
             let &mut (ref mut right_heaps, ref mut best_candidate) = next_state;
-            right_heaps.add_to_heaps(next_item);
+            right_heaps.add_to_heaps(next_item.clone());
             if jmi < delta {
                 Some(None)
             } else {
@@ -164,6 +171,30 @@ where
                     statistic: T::from(stat_weight) * median_diff_squared,
                     location: j,
                 }))
+            }
+        })
+        .filter_map(|result| result)
+        .max()
+        .expect("filter_map ensures result is Some")
+}
+
+pub fn edm_x<T>(z: &[T], delta: usize) -> BestCandidate<T>
+where
+    T: Ord + Clone + Num + One + From<f64>
+{
+    let mut left_heaps: Heaps<T> = Heaps::new();
+    let mut best_candidate: Option<BestCandidate<T>> = None;
+    let mut starting_state = (&mut left_heaps, &mut best_candidate);
+    z.iter().take(z.len() - delta)
+        .enumerate()
+        .scan(starting_state, move |next_state, (i, next_item)| {
+            let &mut (ref mut left_heaps, ref mut best_candidate) = next_state;
+            left_heaps.add_to_heaps(next_item.clone());
+            if i < delta {
+                Some(None)
+            } else {
+                let left_median = left_heaps.get_median();
+                Some(Some(inner_edm_x_loop(left_median, delta, z.iter().skip(i), i)))
             }
         })
         .filter_map(|result| result)
