@@ -155,6 +155,17 @@ impl<F: Float> Num for NonNaN<F> {
     }
 }
 
+pub fn to_non_nans<F: Float>(float_slice: &[F]) -> Option<Vec<NonNaN<F>>> {
+    let mut result = Vec::with_capacity(float_slice.len());
+    for value in float_slice.iter() {
+        match NonNaN::new(*value) {
+            Some(non_nan) => { result.push(non_nan); },
+            None => return None
+        };
+    };
+    Some(result)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -266,6 +277,18 @@ mod tests {
         let zero_right = NonNaN::new(0.0).unwrap();
         let zero_result = big_left % zero_right;
         assert_eq!(zero_result.value(), 0.0);
+    }
+
+    #[test]
+    fn convert_to_non_nans() {
+        let normal_float_values = vec![0.0, 1.0, 2.0];
+        let normal_non_nan_values = to_non_nans(&normal_float_values).unwrap();
+        for (result, expectation) in normal_non_nan_values.iter().zip(normal_float_values.iter()) {
+            assert_eq!(result.value(), *expectation);
+        };
+        let bad_float_values = vec![0.0, 1.0, std::f32::INFINITY, 2.0];
+        let bad_non_nan_values = to_non_nans(&bad_float_values);
+        assert!(bad_non_nan_values.is_none());
     }
 
 }
