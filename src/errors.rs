@@ -1,5 +1,3 @@
-use num::Float;
-
 error_chain! {
     // The type defined for this error. These are the conventional
     // and recommended names, but they can be arbitrarily chosen.

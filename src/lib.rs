@@ -4,7 +4,7 @@ extern crate rand;
 extern crate num;
 
 pub mod errors;
-mod algo;
+pub mod algo;
 
 #[cfg(test)]
 mod tests {
