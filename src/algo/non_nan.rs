@@ -5,6 +5,8 @@ use std::ops::{Add, Sub, Mul, Div, Rem};
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct NonNaN<F: Float>(F);
 
+impl<F: Float> Copy for NonNaN<F> { }
+
 impl<F: Float> NonNaN<F> {
     pub fn new(value: F) -> Option<Self> {
         if value.is_nan() || value.is_infinite() {
@@ -164,6 +166,20 @@ pub fn to_non_nans<F: Float>(float_slice: &[F]) -> Option<Vec<NonNaN<F>>> {
         };
     };
     Some(result)
+}
+
+impl From<f64> for NonNaN<f64> {
+    fn from(f: f64) -> Self {
+        NonNaN::new(f)
+            .expect("WARNING -- this method will crash if you pass it a NaN or infinite float. Do not use unless you are certain this condition is met")
+    }
+}
+
+impl From<f64> for NonNaN<f32> {
+    fn from(f: f64) -> Self {
+        NonNaN::new(f as f32)
+            .expect("WARNING -- this method will crash if you pass it a NaN or infinite float. Do not use unless you are certain this condition is met")
+    }
 }
 
 #[cfg(test)]

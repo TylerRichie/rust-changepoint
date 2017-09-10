@@ -1,5 +1,7 @@
 use num::{One, Num};
 use std::collections::BinaryHeap;
+use std::ops::{Index, RangeFrom};
+use std::cmp::Ordering;
 use algo::edm_x::heap::{MaxHeap, MaxHeapItem, MinHeap, MinHeapItem};
 
 use errors::*;
@@ -133,10 +135,25 @@ impl<T: Ord + Num + One + Clone> Heaps<T> {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BestCandidate<T: Ord> {
     pub statistic: T,
     pub location: usize,
+}
+
+impl<T: Ord> PartialOrd for BestCandidate<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(match self.statistic.cmp(&other.statistic) {
+            Ordering::Equal => self.location.cmp(&other.location).reverse(),
+            ordering => ordering
+        })
+    }
+}
+
+impl<T: Ord> Ord for BestCandidate<T> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).expect("BestCandidate is totally ordered, so partial_ord always returns Some")
+    }
 }
 
 fn inner_edm_x_loop<'a, T, I>(
@@ -149,13 +166,10 @@ where
     T: Ord + Clone + Num + One + From<f64> + 'a,
     I: Iterator<Item = &'a T>,
 {
-    let mut right_heaps: Heaps<T> = Heaps::new();
-    let mut best_candidate: Option<BestCandidate<T>> = None;
-    let mut starting_state = (&mut right_heaps, &mut best_candidate);
+    let right_heaps: Heaps<T> = Heaps::new();
     z_from_i
         .enumerate()
-        .scan(starting_state, move |next_state, (jmi, next_item)| {
-            let &mut (ref mut right_heaps, ref mut best_candidate) = next_state;
+        .scan(right_heaps, move |right_heaps, (jmi, next_item)| {
             right_heaps.add_to_heaps(next_item.clone());
             if jmi < delta {
                 Some(None)
@@ -167,10 +181,11 @@ where
                 let median_diff = left_median.clone() - right_median;
                 let median_diff_squared = median_diff.clone() * median_diff;
                 let stat_weight = (i_float * (j_float - i_float)) / j_float;
-                Some(Some(BestCandidate {
+                let candidate = BestCandidate {
                     statistic: T::from(stat_weight) * median_diff_squared,
-                    location: j,
-                }))
+                    location: i,
+                };
+                Some(Some(candidate))
             }
         })
         .filter_map(|result| result)
@@ -178,34 +193,40 @@ where
         .expect("filter_map ensures result is Some")
 }
 
-pub fn edm_x<T>(z: &[T], delta: usize) -> BestCandidate<T>
+pub fn edm_x<T>(z: &[T], delta: usize) -> Result<BestCandidate<T>>
 where
     T: Ord + Clone + Num + One + From<f64>
 {
-    let mut left_heaps: Heaps<T> = Heaps::new();
-    let mut best_candidate: Option<BestCandidate<T>> = None;
-    let mut starting_state = (&mut left_heaps, &mut best_candidate);
-    z.iter().take(z.len() - delta)
+    if z.len() < delta * 2 {
+        return Err(ErrorKind::NotEnoughValues(z.len(), delta).into())
+    };
+    let left_heaps: Heaps<T> = Heaps::new();
+    let result = z.iter().take(z.len() - delta)
         .enumerate()
-        .scan(starting_state, move |next_state, (i, next_item)| {
-            let &mut (ref mut left_heaps, ref mut best_candidate) = next_state;
+        .scan(left_heaps, move |left_heaps, (i, next_item)| {
             left_heaps.add_to_heaps(next_item.clone());
             if i < delta {
                 Some(None)
             } else {
                 let left_median = left_heaps.get_median();
-                Some(Some(inner_edm_x_loop(left_median, delta, z.iter().skip(i), i)))
+                let inner_best_candidate = inner_edm_x_loop(left_median, delta, z.index(RangeFrom { start: i }).iter(), i);
+                Some(Some(inner_best_candidate))
             }
         })
         .filter_map(|result| result)
         .max()
-        .expect("filter_map ensures result is Some")
+        .expect("filter_map ensures result is Some");
+    Ok(result)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use algo::non_nan::{to_non_nans, NonNaN};
+    use algo::non_nan::NonNaN;
+    use rand::SeedableRng;
+    use rand::distributions::{IndependentSample, Normal};
+    use mersenne_twister::MersenneTwister;
+    use num::abs;
 
     #[test]
     fn heaps_find_the_median() {
@@ -221,5 +242,26 @@ mod tests {
         heaps.add_to_heaps(NonNaN::new(7.0).unwrap());
         heaps.add_to_heaps(NonNaN::new(8.0).unwrap());
         assert_eq!(heaps.get_median(), NonNaN::new(4.0).unwrap());
+    }
+
+    #[test]
+    fn edm_x_on_central_tendency() {
+        let before_change_count = 100;
+        let after_change_count = 400;
+        let delta = 10;
+        let tolerance = 50;
+        let mut rng: MersenneTwister = SeedableRng::from_seed(0x1234);
+        let mut input: Vec<NonNaN<f64>> = Vec::new();
+        let before_change_dist = Normal::new(10.0, 5.0);
+        for _ in 0..before_change_count {
+            input.push(NonNaN::new(before_change_dist.ind_sample(&mut rng)).unwrap());
+        };
+        let after_change_dist = Normal::new(30.0, 5.0);
+        for _ in 0..after_change_count {
+            input.push(NonNaN::new(after_change_dist.ind_sample(&mut rng)).unwrap());
+        };
+        let best_candidate = edm_x(&input, delta).unwrap();
+        let abs_loc_diff = abs(best_candidate.location as i64 - before_change_count as i64);
+        assert!(abs_loc_diff < tolerance);
     }
 }
