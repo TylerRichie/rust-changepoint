@@ -7,8 +7,8 @@ pub struct MinHeapItem<T: PartialEq + Eq + PartialOrd + Ord>(pub T);
 pub struct MaxHeapItem<T: PartialEq + Eq + PartialOrd + Ord>(pub T);
 
 fn min_heap_cmp<T>(this: &MinHeapItem<T>, other: &MinHeapItem<T>) -> Ordering
-    where
-    T: PartialEq + Eq + PartialOrd + Ord
+where
+    T: PartialEq + Eq + PartialOrd + Ord,
 {
     let &MinHeapItem(ref this) = this;
     let &MinHeapItem(ref other) = other;
@@ -28,8 +28,8 @@ impl<T: Ord> Ord for MinHeapItem<T> {
 }
 
 fn max_heap_cmp<T>(this: &MaxHeapItem<T>, other: &MaxHeapItem<T>) -> Ordering
-    where
-    T: PartialEq + Eq + PartialOrd + Ord
+where
+    T: PartialEq + Eq + PartialOrd + Ord,
 {
     let &MaxHeapItem(ref this) = this;
     let &MaxHeapItem(ref other) = other;
@@ -76,13 +76,17 @@ mod tests {
         let mut min_heap: MinHeap<u32> = BinaryHeap::new();
         for source_number in source_numbers.drain(RangeFull) {
             min_heap.push(source_number.into());
-        };
+        }
         while let Some(MinHeapItem(result_number)) = min_heap.pop() {
             result_numbers.push(result_number);
-        };
-        for (result_number, expected_number) in result_numbers.drain(RangeFull).zip(sorted_numbers.drain(RangeFull)) {
+        }
+        for (result_number, expected_number) in
+            result_numbers.drain(RangeFull).zip(sorted_numbers.drain(
+                RangeFull,
+            ))
+        {
             assert_eq!(result_number, expected_number);
-        };
+        }
     }
 
     #[test]
@@ -93,12 +97,16 @@ mod tests {
         let mut min_heap: MaxHeap<u32> = BinaryHeap::new();
         for source_number in source_numbers.drain(RangeFull) {
             min_heap.push(source_number.into());
-        };
+        }
         while let Some(MaxHeapItem(result_number)) = min_heap.pop() {
             result_numbers.push(result_number);
-        };
-        for (result_number, expected_number) in result_numbers.drain(RangeFull).zip(sorted_numbers.drain(RangeFull)) {
+        }
+        for (result_number, expected_number) in
+            result_numbers.drain(RangeFull).zip(sorted_numbers.drain(
+                RangeFull,
+            ))
+        {
             assert_eq!(result_number, expected_number);
-        };
+        }
     }
 }

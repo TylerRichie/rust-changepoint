@@ -21,9 +21,9 @@ enum HeapSizeInfo {
     Empty,
 }
 
-pub trait HeapNum: Ord + Num + One + Clone { }
+pub trait HeapNum: Ord + Num + One + Clone {}
 
-impl<T: Ord + Num + One + Clone> HeapNum for T { }
+impl<T: Ord + Num + One + Clone> HeapNum for T {}
 
 struct Heaps<T: HeapNum> {
     min_heap: MinHeap<T>,
@@ -179,10 +179,11 @@ where
 
 fn edm_x<T>(z: &[T], delta: usize) -> BestCandidate<T>
 where
-    T: HeapNum + From<f64>
+    T: HeapNum + From<f64>,
 {
     let left_heaps: Heaps<T> = Heaps::new();
-    z.iter().take(z.len() - delta)
+    z.iter()
+        .take(z.len() - delta)
         .enumerate()
         .scan(left_heaps, move |left_heaps, (i, next_item)| {
             left_heaps.add_to_heaps(next_item.clone());
@@ -190,7 +191,12 @@ where
                 Some(None)
             } else {
                 let left_median = left_heaps.get_median();
-                let inner_best_candidate = inner_edm_x_loop(left_median, delta, z.index(RangeFrom { start: i }).iter(), i);
+                let inner_best_candidate = inner_edm_x_loop(
+                    left_median,
+                    delta,
+                    z.index(RangeFrom { start: i }).iter(),
+                    i,
+                );
                 Some(Some(inner_best_candidate))
             }
         })
@@ -201,7 +207,7 @@ where
 
 #[derive(Clone, Debug)]
 pub struct EDMX {
-    delta: usize
+    delta: usize,
 }
 
 impl EDMX {
@@ -213,7 +219,9 @@ impl EDMX {
 impl<T: HeapNum + From<f64>> ChangePointDetector<T> for EDMX {
     fn find_candidate(&self, observations: &[T]) -> Result<BestCandidate<T>> {
         if observations.len() < self.delta * 2 {
-            Err(ErrorKind::NotEnoughValues(observations.len(), self.delta).into())
+            Err(
+                ErrorKind::NotEnoughValues(observations.len(), self.delta).into(),
+            )
         } else {
             Ok(edm_x(observations, self.delta))
         }
@@ -255,12 +263,14 @@ mod tests {
         let mut input: Vec<NonNaN<f64>> = Vec::new();
         let before_change_dist = Normal::new(10.0, 5.0);
         for _ in 0..before_change_count {
-            input.push(NonNaN::new(before_change_dist.ind_sample(&mut rng)).unwrap());
-        };
+            input.push(
+                NonNaN::new(before_change_dist.ind_sample(&mut rng)).unwrap(),
+            );
+        }
         let after_change_dist = Normal::new(30.0, 5.0);
         for _ in 0..after_change_count {
             input.push(NonNaN::new(after_change_dist.ind_sample(&mut rng)).unwrap());
-        };
+        }
         let best_candidate = edm_x(&input, delta);
         let abs_loc_diff = abs(best_candidate.location as i64 - before_change_count as i64);
         assert!(abs_loc_diff < tolerance);

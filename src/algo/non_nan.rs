@@ -5,7 +5,7 @@ use std::ops::{Add, Sub, Mul, Div, Rem};
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct NonNaN<F: Float>(F);
 
-impl<F: Float> Copy for NonNaN<F> { }
+impl<F: Float> Copy for NonNaN<F> {}
 
 impl<F: Float> NonNaN<F> {
     pub fn new(value: F) -> Option<Self> {
@@ -136,23 +136,20 @@ impl<F: Float> One for NonNaN<F> {
 #[derive(Clone, Debug)]
 pub enum ParseNonNaNError {
     ParseFloatError,
-    NaNOrInfiniteError
+    NaNOrInfiniteError,
 }
 
 impl<F: Float> Num for NonNaN<F> {
     type FromStrRadixErr = ParseNonNaNError;
 
-    fn from_str_radix(
-        str: &str,
-        radix: u32
-    ) -> Result<Self, Self::FromStrRadixErr> {
+    fn from_str_radix(str: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
         let float_result = match F::from_str_radix(str, radix) {
             Ok(result) => result,
-            Err(_) => return Err(ParseNonNaNError::ParseFloatError)
+            Err(_) => return Err(ParseNonNaNError::ParseFloatError),
         };
         match NonNaN::new(float_result) {
             Some(result) => Ok(result),
-            None => Err(ParseNonNaNError::NaNOrInfiniteError)
+            None => Err(ParseNonNaNError::NaNOrInfiniteError),
         }
     }
 }
@@ -161,10 +158,12 @@ pub fn to_non_nans<F: Float>(float_slice: &[F]) -> Option<Vec<NonNaN<F>>> {
     let mut result = Vec::with_capacity(float_slice.len());
     for value in float_slice.iter() {
         match NonNaN::new(*value) {
-            Some(non_nan) => { result.push(non_nan); },
-            None => return None
+            Some(non_nan) => {
+                result.push(non_nan);
+            }
+            None => return None,
         };
-    };
+    }
     Some(result)
 }
 
@@ -203,7 +202,9 @@ mod tests {
 
     #[test]
     fn finite_float_values_are_non_nan() {
-        NonNaN::new(1.0).expect("NonNaN returned a None for a valid floating point number input.");
+        NonNaN::new(1.0).expect(
+            "NonNaN returned a None for a valid floating point number input.",
+        );
     }
 
     #[test]
@@ -301,7 +302,7 @@ mod tests {
         let normal_non_nan_values = to_non_nans(&normal_float_values).unwrap();
         for (result, expectation) in normal_non_nan_values.iter().zip(normal_float_values.iter()) {
             assert_eq!(result.value(), *expectation);
-        };
+        }
         let bad_float_values = vec![0.0, 1.0, std::f32::INFINITY, 2.0];
         let bad_non_nan_values = to_non_nans(&bad_float_values);
         assert!(bad_non_nan_values.is_none());

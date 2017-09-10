@@ -49,7 +49,10 @@ fn main() {
     }
     println!("Initialized EDM-X algorithm with delta as {}", DELTA);
     let algorithm = EDMX::new(DELTA);
-    println!("Performing a permutation test with {} iterations", NUM_PERMUTATIONS);
+    println!(
+        "Performing a permutation test with {} iterations",
+        NUM_PERMUTATIONS
+    );
     let full_test = permutation_test(&algorithm, rng, NUM_PERMUTATIONS, &inputs).unwrap();
     println!("");
     println!("Candidate split location: {}", full_test.changepoint_index);
