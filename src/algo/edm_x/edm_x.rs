@@ -3,6 +3,8 @@ use std::collections::BinaryHeap;
 use std::ops::{Index, RangeFrom};
 use std::cmp::Ordering;
 use algo::edm_x::heap::{MaxHeap, MaxHeapItem, MinHeap, MinHeapItem};
+use algo::best_candidate::BestCandidate;
+use algo::changepoint::{ChangePointDetector, ChangePointDetectorBuilder};
 
 use errors::*;
 
@@ -20,13 +22,17 @@ enum HeapSizeInfo {
     Empty,
 }
 
-struct Heaps<T: Ord + Num + One + Clone> {
+trait HeapNum: Ord + Num + One + Clone { }
+
+impl<T: Ord + Num + One + Clone> HeapNum for T { }
+
+struct Heaps<T: HeapNum> {
     min_heap: MinHeap<T>,
     max_heap: MaxHeap<T>,
     heap_size_info: HeapSizeInfo,
 }
 
-impl<T: Ord + Num + One + Clone> Heaps<T> {
+impl<T: HeapNum> Heaps<T> {
     fn new() -> Self {
         let min_heap: MinHeap<T> = BinaryHeap::new();
         let max_heap: MaxHeap<T> = BinaryHeap::new();
@@ -135,27 +141,6 @@ impl<T: Ord + Num + One + Clone> Heaps<T> {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct BestCandidate<T: Ord> {
-    pub statistic: T,
-    pub location: usize,
-}
-
-impl<T: Ord> PartialOrd for BestCandidate<T> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(match self.statistic.cmp(&other.statistic) {
-            Ordering::Equal => self.location.cmp(&other.location).reverse(),
-            ordering => ordering
-        })
-    }
-}
-
-impl<T: Ord> Ord for BestCandidate<T> {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).expect("BestCandidate is totally ordered, so partial_ord always returns Some")
-    }
-}
-
 fn inner_edm_x_loop<'a, T, I>(
     left_median: T,
     delta: usize,
@@ -163,7 +148,7 @@ fn inner_edm_x_loop<'a, T, I>(
     i: usize,
 ) -> BestCandidate<T>
 where
-    T: Ord + Clone + Num + One + From<f64> + 'a,
+    T: HeapNum + From<f64> + 'a,
     I: Iterator<Item = &'a T>,
 {
     let right_heaps: Heaps<T> = Heaps::new();
@@ -193,15 +178,12 @@ where
         .expect("filter_map ensures result is Some")
 }
 
-pub fn edm_x<T>(z: &[T], delta: usize) -> Result<BestCandidate<T>>
+fn edm_x<T>(z: &[T], delta: usize) -> BestCandidate<T>
 where
-    T: Ord + Clone + Num + One + From<f64>
+    T: HeapNum + From<f64>
 {
-    if z.len() < delta * 2 {
-        return Err(ErrorKind::NotEnoughValues(z.len(), delta).into())
-    };
     let left_heaps: Heaps<T> = Heaps::new();
-    let result = z.iter().take(z.len() - delta)
+    z.iter().take(z.len() - delta)
         .enumerate()
         .scan(left_heaps, move |left_heaps, (i, next_item)| {
             left_heaps.add_to_heaps(next_item.clone());
@@ -215,8 +197,43 @@ where
         })
         .filter_map(|result| result)
         .max()
-        .expect("filter_map ensures result is Some");
-    Ok(result)
+        .expect("filter_map ensures result is Some")
+}
+
+#[derive(Clone, Debug)]
+pub struct EDMXDetector<'a, T: HeapNum + From<f64> + 'a> {
+    z: &'a [T],
+    delta: usize
+}
+
+impl<'a, T: HeapNum + From<f64>> ChangePointDetector for EDMXDetector<'a, T> {
+    type Candidate = T;
+    fn find_candidate(self) -> BestCandidate<T> {
+        edm_x(self.z, self.delta)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct EDMXBuilder {
+    delta: usize
+}
+
+impl EDMXBuilder {
+    fn new(delta: usize) -> Self {
+        EDMXBuilder { delta: delta }
+    }
+}
+
+impl<'a, T: HeapNum + From<f64> + 'a> ChangePointDetectorBuilder<'a, T> for EDMXBuilder {
+    type Detector = EDMXDetector<'a, T>;
+
+    fn detect_changepoint_on(&self, observations: &'a [T]) -> Result<Self::Detector> {
+        if observations.len() >= self.delta * 2 {
+            Ok(EDMXDetector { z: observations, delta: self.delta })
+        } else {
+            Err(ErrorKind::NotEnoughValues(observations.len(), self.delta).into())
+        }
+    }
 }
 
 #[cfg(test)]
@@ -260,7 +277,7 @@ mod tests {
         for _ in 0..after_change_count {
             input.push(NonNaN::new(after_change_dist.ind_sample(&mut rng)).unwrap());
         };
-        let best_candidate = edm_x(&input, delta).unwrap();
+        let best_candidate = edm_x(&input, delta);
         let abs_loc_diff = abs(best_candidate.location as i64 - before_change_count as i64);
         assert!(abs_loc_diff < tolerance);
     }
