@@ -3,6 +3,10 @@
 `rust-changepoint` provides an implementation of the EDM-X algorithm described
 in the ["Leveraging Cloud Data to Mitigate User Experience from ‘Breaking Bad’" paper](https://courses.cit.cornell.edu/nj89/docs/edm.pdf).
 
+The implementation is reasonably efficient, but it will run unbearably slow (even with the
+parallelization provided by [rayon](https://github.com/nikomatsakis/rayon)) unless you
+compile with the `--release` flag.
+
 ## Example Usage
 
 `cargo run --release --example two_normal_distributions`
@@ -65,4 +69,18 @@ fn main() {
     println!("Candidate split location: {}", full_test.changepoint_index);
     println!("P-Value: {}", full_test.p_value);
 }
+```
+
+Output:
+
+```
+**Detect a Changepoint from observations drawn from two normal distributions**
+
+Drawing 500 samples from a normal distribution with mean 10.0 and standard deviation 5.0
+Drawing 200 samples from a normal distribution with mean 20.0 and standard deviation 5.0
+Initialized EDM-X algorithm with delta as 30
+Performing a permutation test with 199 iterations
+
+Candidate split location: 502
+P-Value: 0.00000
 ```

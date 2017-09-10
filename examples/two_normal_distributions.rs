@@ -28,12 +28,12 @@ fn main() {
     let after_change_dist = Normal::new(END_DISTRIBUTION_MEAN, END_DISTRIBUTION_STD);
     let num_before_observations = NUM_START_OBSERVATIONS;
     let num_after_observations = NUM_END_OBSERVATIONS;
-    println!("Drawing {} samples from a normal distribution with mean {} and standard deviation {}",
+    println!("Drawing {} samples from a normal distribution with mean {:.1} and standard deviation {:.1}",
              NUM_START_OBSERVATIONS,
              START_DISTRIBUTION_MEAN,
              START_DISTRIBUTION_STD,
     );
-    println!("Drawing {} samples from a normal distribution with mean {} and standard deviation {}",
+    println!("Drawing {} samples from a normal distribution with mean {:.1} and standard deviation {:.1}",
              NUM_END_OBSERVATIONS,
              END_DISTRIBUTION_MEAN,
              END_DISTRIBUTION_STD,
@@ -53,5 +53,5 @@ fn main() {
     let full_test = permutation_test(&algorithm, rng, NUM_PERMUTATIONS, &inputs).unwrap();
     println!("");
     println!("Candidate split location: {}", full_test.changepoint_index);
-    println!("P-Value: {}", full_test.p_value);
+    println!("P-Value: {:.5}", full_test.p_value);
 }
