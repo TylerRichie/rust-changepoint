@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BestCandidate<T: Ord> {
     pub statistic: T,

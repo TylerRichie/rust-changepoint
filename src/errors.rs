@@ -56,6 +56,10 @@ error_chain! {
                 delta * 2,
                 delta)
         }
+        PermutationNeverRan {
+            description("Permutation failed to run")
+            display("Permutation failed to run")
+        }
         // InvalidToolchainName(t: String) {
         //     description("invalid toolchain name")
         //     display("invalid toolchain name: '{}'", t)

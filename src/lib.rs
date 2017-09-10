@@ -1,4 +1,5 @@
 #[macro_use] extern crate error_chain;
+extern crate rayon;
 extern crate mersenne_twister;
 extern crate rand;
 extern crate num;

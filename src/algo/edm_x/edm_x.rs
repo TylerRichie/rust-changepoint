@@ -1,10 +1,9 @@
 use num::{One, Num};
 use std::collections::BinaryHeap;
 use std::ops::{Index, RangeFrom};
-use std::cmp::Ordering;
 use algo::edm_x::heap::{MaxHeap, MaxHeapItem, MinHeap, MinHeapItem};
 use algo::best_candidate::BestCandidate;
-use algo::changepoint::{ChangePointDetector, ChangePointDetectorBuilder};
+use algo::changepoint::ChangePointDetector;
 
 use errors::*;
 
@@ -22,7 +21,7 @@ enum HeapSizeInfo {
     Empty,
 }
 
-trait HeapNum: Ord + Num + One + Clone { }
+pub trait HeapNum: Ord + Num + One + Clone { }
 
 impl<T: Ord + Num + One + Clone> HeapNum for T { }
 
@@ -201,37 +200,22 @@ where
 }
 
 #[derive(Clone, Debug)]
-pub struct EDMXDetector<'a, T: HeapNum + From<f64> + 'a> {
-    z: &'a [T],
+pub struct EDMX {
     delta: usize
 }
 
-impl<'a, T: HeapNum + From<f64>> ChangePointDetector for EDMXDetector<'a, T> {
-    type Candidate = T;
-    fn find_candidate(self) -> BestCandidate<T> {
-        edm_x(self.z, self.delta)
+impl EDMX {
+    pub fn new(delta: usize) -> Self {
+        EDMX { delta: delta }
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct EDMXBuilder {
-    delta: usize
-}
-
-impl EDMXBuilder {
-    fn new(delta: usize) -> Self {
-        EDMXBuilder { delta: delta }
-    }
-}
-
-impl<'a, T: HeapNum + From<f64> + 'a> ChangePointDetectorBuilder<'a, T> for EDMXBuilder {
-    type Detector = EDMXDetector<'a, T>;
-
-    fn detect_changepoint_on(&self, observations: &'a [T]) -> Result<Self::Detector> {
-        if observations.len() >= self.delta * 2 {
-            Ok(EDMXDetector { z: observations, delta: self.delta })
-        } else {
+impl<T: HeapNum + From<f64>> ChangePointDetector<T> for EDMX {
+    fn find_candidate(&self, observations: &[T]) -> Result<BestCandidate<T>> {
+        if observations.len() < self.delta * 2 {
             Err(ErrorKind::NotEnoughValues(observations.len(), self.delta).into())
+        } else {
+            Ok(edm_x(observations, self.delta))
         }
     }
 }
