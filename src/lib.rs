@@ -1,7 +1,6 @@
 extern crate num;
 
-mod edm;
-mod edm_x;
+mod algo;
 
 #[cfg(test)]
 mod tests {

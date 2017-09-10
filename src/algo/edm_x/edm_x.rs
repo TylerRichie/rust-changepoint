@@ -1,6 +1,6 @@
-use num::{One, Num, Float};
+use num::{One, Num};
 use std::collections::BinaryHeap;
-use edm_x::heap::{MaxHeap, MaxHeapItem, MinHeap, MinHeapItem};
+use algo::edm_x::heap::{MaxHeap, MaxHeapItem, MinHeap, MinHeapItem};
 
 enum HeapItem<T: Ord> {
     MinHeap(MinHeapItem<T>),
@@ -133,8 +133,8 @@ impl<T: Ord + Num + One + Clone> Heaps<T> {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BestCandidate<T: Ord> {
-    statistic: T,
-    location: usize,
+    pub statistic: T,
+    pub location: usize,
 }
 
 fn inner_edm_x_loop<T, I>(left_median: T, delta: usize, z_from_i: I, i: usize) -> BestCandidate<T>
