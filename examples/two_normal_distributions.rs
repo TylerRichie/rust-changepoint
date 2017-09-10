@@ -1,13 +1,3 @@
-# Changepoint Detection in Rust
-
-`rust-changepoint` provides an implementation of the EDM-X algorithm described
-in the ["Leveraging Cloud Data to Mitigate User Experience from ‘Breaking Bad’" paper](https://courses.cit.cornell.edu/nj89/docs/edm.pdf).
-
-## Example Usage
-
-`cargo run --release --example two_normal_distributions`
-
-```rust
 extern crate changepoint;
 extern crate rand;
 extern crate mersenne_twister;
@@ -65,4 +55,3 @@ fn main() {
     println!("Candidate split location: {}", full_test.changepoint_index);
     println!("P-Value: {}", full_test.p_value);
 }
-```

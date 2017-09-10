@@ -5,11 +5,9 @@ extern crate rand;
 extern crate num;
 
 pub mod errors;
-pub mod algo;
+mod algo;
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-    }
-}
+pub use algo::edm_x::edm_x::EDMX;
+pub use algo::changepoint::ChangePointDetector;
+pub use algo::non_nan::{NonNaN, to_non_nans};
+pub use algo::permutation_test::{permutation_test, PermutationTestResult};
